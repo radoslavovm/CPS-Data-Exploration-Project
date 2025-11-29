@@ -1,0 +1,218 @@
+---
+title: "CPS Final Project"
+author: "Martina Radoslavov, Ayaka, Rosalie Daniels"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+# What is our research question
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidycensus)
+library(dplyr)
+library(purrr)
+library(here)
+library(tidyverse)
+library(ggplot2)
+```
+
+```{r}
+census_api_key("4b11e9f5d9ac286e1a22800c7e56fc771229ec6a", install = TRUE)
+```
+
+-   B02001: Race
+
+-   B15003: Education/Educational Attainment (25 yrs & older)
+
+-   B25003 : Home Ownership
+
+-   B07007 : Geographic Mobility by Citizenship Status
+
+```{r generate a list}
+d <- c()
+for (i in 1:49) {
+  if (i < 10) {
+    r <- paste("B01001_00", i, sep = "")
+  }
+  else {r <- paste("B01001_0", i, sep = "") }
+  
+  d <- c(d, r)
+}
+```
+
+```{r Select Variables}
+variables <- 
+  c('B02001_001', 'B02001_002', 'B02001_003', 'B02001_005', 'B02001_009'
+    , 'B15003_001', 'B15003_017', 'B15003_022', 'B15003_025'
+    , 'B25003_001', 'B25003_002', 'B25003_003'
+    , 'B07007_001', 'B07007_002', 'B07007_003')
+```
+
+```{r Data Pull}
+state_level <- get_acs(geography = "state", 
+                        variables = variables, 
+                        year = 2024,
+                        survey = "acs1")
+```
+
+```{r}
+state_wide <- state_level %>%
+  select(GEOID, NAME, variable, estimate) %>%
+  pivot_wider(names_from = variable, values_from = estimate)
+
+```
+
+```{r}
+race_vars <- c("B02001_002", "B02001_003", "B02001_005", "B02001_009")
+
+race_df <- state_wide %>%
+  mutate(total_pop = B02001_001) %>%
+  mutate(across(all_of(race_vars),
+                ~ .x / total_pop * 100,
+                .names = "pct_{.col}"))
+
+```
+
+```{r}
+ggplot(race_df, aes(x = pct_B02001_002, y = pct_B02001_003, label = NAME)) +
+  geom_point() +
+  ggrepel::geom_text_repel() +
+  labs(x = "% White", y = "% Black", 
+       title = "Race Composition by State (ACS 2024)") +
+  theme_minimal()
+
+```
+
+```{r}
+education_df <- state_wide %>%
+  mutate(pct_bachelors_plus = 
+           (B15003_022 + B15003_025) / B15003_001 * 100)
+
+```
+
+```{r Top 10 most educated states}
+education_df %>%
+  arrange(desc(pct_bachelors_plus)) %>%
+  slice(1:10)
+
+```
+
+```{r Map of education percentage}
+states_map <- map_data("state")
+
+education_plot <- education_df %>%
+  mutate(state = tolower(NAME))
+
+merged_map <- states_map %>%
+  left_join(education_plot, by = c("region" = "state"))
+
+ggplot(merged_map, aes(long, lat, group = group, fill = pct_bachelors_plus)) +
+  geom_polygon(color = "white") +
+  coord_map() +
+  scale_fill_viridis_c(option = "plasma") +
+  labs(title = "Percent with Bachelor's Degree or Higher (ACS 2024)",
+       fill = "% BA+") +
+  theme_void()
+
+
+```
+
+```{r Housing tenure: % owner-occupied vs rented}
+housing_df <- state_wide %>%
+  mutate(
+    pct_owner = B25003_002 / B25003_001 * 100,
+    pct_renter = B25003_003 / B25003_001 * 100
+  )
+
+```
+
+```{r Owner vs Renter}
+ggplot(housing_df, aes(x = pct_owner, y = pct_renter, label = NAME)) +
+  geom_point() +
+  ggrepel::geom_text_repel() +
+  labs(x = "% Owner-Occupied", y = "% Renter-Occupied",
+       title = "Housing Tenure by State (ACS 2024)") +
+  theme_minimal()
+```
+
+```{r Geographic mobility: % who lived in same house 1 year ago}
+mobility_df <- state_wide %>%
+  mutate(
+    pct_same_house = B07007_002 / B07007_001 * 100,
+    pct_same_county = B07007_003 / B07007_001 * 100
+  )
+```
+
+```{r Mobility by state}
+ggplot(mobility_df, aes(x = pct_same_house, y = pct_same_county, label = NAME)) +
+  geom_point() +
+  ggrepel::geom_text_repel() +
+  labs(x = "% Same House 1 Year Ago", y = "% Same County 1 Year Ago",
+       title = "Geographic Mobility (ACS 2024)") +
+  theme_minimal()
+```
+
+```{r Correlation analysis}
+merged <- state_wide %>%
+  mutate(
+    pct_bachelors_plus = (B15003_022 + B15003_025) / B15003_001 * 100,
+    pct_owner = B25003_002 / B25003_001 * 100
+  )
+
+ggplot(merged, aes(x = pct_bachelors_plus, y = pct_owner)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(title = "Education vs Homeownership by State",
+       x = "% Bachelor's or Higher",
+       y = "% Owner Occupied") +
+  theme_minimal()
+
+```
+
+```{r Rank states on any metric}
+race_df %>%
+  select(NAME, pct_B02001_003) %>%
+  arrange(desc(pct_B02001_003))
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
