@@ -1,0 +1,47 @@
+---
+title: "Data Science I Final Project: RQ and Data"
+author: "Ayaka"
+format: pdf
+---
+
+# Which factors best explain variation in receiving SNAP benefits in California vs Texas
+
+something about historically red states and blue states
+
+```{r data}
+library(tidyr)
+library(tidycensus)
+library(dplyr)
+library(purrr)
+library(here)
+
+```
+
+# Data 
+
+```{r}
+both <- get_acs(geography = "county", 
+                state = c("CA", "TX"),
+                variables = c("B01001_001", "B07009_013", "B16001_002", "B17001_002", "C22001_002", 
+                              "B23008_001", "C24070_002", "B07013_016", "B08006_008", "B25003_002"), 
+                year = 2024,
+                survey = "acs1") 
+pop <- both %>%
+  filter(variable == "B01001_001") %>%
+  select(GEOID, population = estimate)
+
+joined <- both %>%
+  left_join(pop, by = "GEOID")
+
+both <- joined %>%
+  mutate(normalized_estimate = estimate / population)
+
+both <- both %>% 
+  select(GEOID, NAME, variable, population, normalized_estimate) %>%
+  pivot_wider(
+    names_from = variable,
+    values_from = normalized_estimate
+  )
+
+
+```
