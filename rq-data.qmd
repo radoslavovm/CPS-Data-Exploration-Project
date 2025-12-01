@@ -6,7 +6,6 @@ format: pdf
 
 # Which factors best explain variation in receiving SNAP benefits in California vs Texas
 
-something about historically red states and blue states
 
 ```{r data}
 library(tidyr)
@@ -14,10 +13,16 @@ library(tidycensus)
 library(dplyr)
 library(purrr)
 library(here)
+library(tidyverse)
+library(psych)
+library(ggplot2)
+library(cluster)
+library(GGally)
+library(factoextra)
 
 ```
 
-# Data 
+# Data
 
 ```{r}
 both <- get_acs(geography = "county", 
@@ -42,6 +47,45 @@ both <- both %>%
     names_from = variable,
     values_from = normalized_estimate
   )
+
+
+```
+
+# EDA
+
+```{r}
+sum(is.na(both))
+both <- na.omit(both)
+sum(is.na(both))
+```
+
+# Clustering
+
+```{r}
+both_num <- both %>%
+  dplyr::select(-c(GEOID, NAME))
+
+Xsc <- scale(both_num)
+
+set.seed(100)
+
+m <- c( "average", "single", "complete", "ward")
+names(m) <- c( "average", "single", "complete", "ward")
+ac <- function(x) {
+  agnes(Xsc, method = x)$ac
+  }
+purrr::map_dbl(m, ac)
+
+distance <- dist(Xsc, method = "euclidean")
+hc_complete <- hclust(distance, method = 'ward.D2')
+plot(hc_complete)
+
+plot <- fviz_dend(hc_complete, k = 2)
+plot +
+  theme_minimal() +
+  labs(title = "Dendrogram based on Hierarchical Clustering")
+
+sub_grp <- cutree(hc_complete, 2)
 
 
 ```
