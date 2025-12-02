@@ -6,8 +6,9 @@ format: pdf
 
 # Which factors best explain variation in receiving SNAP benefits in California vs Texas
 
+something about historically red states and blue states
 
-```{r data}
+```{r setup}
 library(tidyr)
 library(tidycensus)
 library(dplyr)
@@ -19,12 +20,13 @@ library(ggplot2)
 library(cluster)
 library(GGally)
 library(factoextra)
+library(ggcorrplot)
 
 ```
 
 # Data
 
-```{r}
+```{r data}
 both <- get_acs(geography = "county", 
                 state = c("CA", "TX"),
                 variables = c("B01001_001", "B07009_013", "B16001_002", "B17001_002", "C22001_002", 
@@ -53,17 +55,42 @@ both <- both %>%
 
 # EDA
 
-```{r}
+```{r eda, warning=FALSE}
 sum(is.na(both))
 both <- na.omit(both)
 sum(is.na(both))
+
+# Check for correlation among variables & remove highly correlated variables
+GGally::ggcorr(both, size = 2)
+
+# Numeric columns only for analyses
+both_num <- both %>%
+  dplyr::select(-c(GEOID, NAME))
+```
+
+"C22001_002", "B25003_002", "B07009_013", "B23008_001", "population" were highly correlated among the select variables.
+
+# PCA
+
+```{r pca}
+# B01001_001 has 0 variance since variables are normalized by population
+zero_variance_cols <- names(both_num)[apply(both_num, 2, var, na.rm = TRUE) == 0]
+both_num <- both_num[, !(names(both_num) %in% zero_variance_cols)]
+
+pca <- prcomp(both_num, scale. = TRUE)
+loadings <- as.data.frame(pca$x)
+
+mapply(shapiro.test, both_num)
+
+mardia(both_num)
+KMO(both_num)
+cortest.bartlett(both_num)
+fa.parallel(both_num, fa = "fa")
 ```
 
 # Clustering
 
-```{r}
-both_num <- both %>%
-  dplyr::select(-c(GEOID, NAME))
+```{r clustering}
 
 Xsc <- scale(both_num)
 
@@ -89,3 +116,4 @@ sub_grp <- cutree(hc_complete, 2)
 
 
 ```
+
