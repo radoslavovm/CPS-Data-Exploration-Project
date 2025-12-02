@@ -24,13 +24,81 @@ library(ggcorrplot)
 
 ```
 
+
+### Pulling Data and Variables
+```{r Generate a list}
+# Creating list 
+d <- c()
+for (i in 1:49) {
+  if (i < 10) {
+    r <- paste("B01001_00", i, sep = "")
+  }
+  else {r <- paste("B01001_0", i, sep = "") }
+  
+  d <- c(d, r)
+}
+```
+
+```{r Select Variables}
+# Variable list for ACS pull
+variables <- 
+  c(# Pooulation
+    'B01001_001',
+    # Race
+    'B02001_001', # Total Population
+    'B02001_002', # White Alone
+    'B02001_003', # Black or African American Alone
+    'B02001_005', # Asian Alone
+    'B02001_009', # Two or more races
+    
+    # Educational Attainment
+    'B15003_001', # Total Education Population
+    'B15003_017', # High School Diploma
+    'B15003_022', # Bachelor's Degree
+    'B15003_025', # Doctorate Degree
+    
+    # Housing Status
+    'B25003_001', # Total Housing Units
+    'B25003_002', # Owner Occupied
+    'B25003_003', # Renter Occupied
+    
+    # Geographic Mobility by Citizenship
+    'B07007_001', # Total Population for Mobility
+    'B07007_002', # Native Population
+    'B07007_003', # Foreign Born Population
+    
+    # Language Spoken at Home
+    "B16001_001", # Total population age 5+ 
+    "B16001_002", # Speak only English at home
+    
+    # Poverty Status
+    "B17001_001", # Total 
+    "B17001_002", # Income in the past 12 months below poverty level
+    
+    # Transportation to Work
+    "B08006_001",  # Total workers
+    "B08006_008",  # Public transportation
+    
+    # Travel time to work
+    "B08303_001", # Total workers
+    "B08303_013", # Workers with commute time 90 or more minutes
+    
+    # Family Characteristics/Structure 
+    "B09002_001",  # Total population in families
+    "B09002_002",  # In married-couple families
+    
+    # Employment Status
+    "B23025_001", # Total Population 16+
+    "B23025_005"  # Unemployed
+    )
+```
+
 # Data
 
 ```{r data}
 both <- get_acs(geography = "county", 
                 state = c("CA", "TX"),
-                variables = c("B01001_001", "B07009_013", "B16001_002", "B17001_002", "C22001_002", 
-                              "B23008_001", "C24070_002", "B07013_016", "B08006_008", "B25003_002"), 
+                variables = variables, 
                 year = 2024,
                 survey = "acs1") 
 pop <- both %>%
@@ -64,7 +132,6 @@ both_num <- both %>%
   dplyr::select(-c(GEOID, NAME))
 ```
 
-"C22001_002", "B25003_002", "B07009_013", "B23008_001", "population" were highly correlated among the select variables.
 
 # PCA
 
