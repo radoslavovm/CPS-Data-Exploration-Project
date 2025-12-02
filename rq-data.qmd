@@ -37,13 +37,9 @@ pop <- both %>%
   filter(variable == "B01001_001") %>%
   select(GEOID, population = estimate)
 
-joined <- both %>%
-  left_join(pop, by = "GEOID")
-
-both <- joined %>%
-  mutate(normalized_estimate = estimate / population)
-
-both <- both %>% 
+both <- both %>%
+  left_join(pop, by = "GEOID") %>%
+  mutate(normalized_estimate = estimate / population) %>% 
   select(GEOID, NAME, variable, population, normalized_estimate) %>%
   pivot_wider(
     names_from = variable,
@@ -116,4 +112,3 @@ sub_grp <- cutree(hc_complete, 2)
 
 
 ```
-
