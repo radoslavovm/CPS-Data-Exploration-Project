@@ -420,7 +420,7 @@ ggplot(merged_map, aes(long, lat, group = group, fill = Married_Family)) +
 ## PCA 
 
 ### Correlation Heatmap
-```{r}
+```{r, warning=FALSE}
 # Correlation Heatmap
 ggcorr(data, hjust = .9, size = 2, layout.exp = 2)
 ```
@@ -465,13 +465,13 @@ plot(cumsum(explained_variance), xlab = "Principal Component",
 
 
 ### Scree Plot
-```{r}
+```{r, warning=FALSE}
 # Scree Plot through Function
 fviz_eig(pca_result, addlabels = TRUE)
 ```
 
 ### Biplot
-```{r}
+```{r, warning=FALSE}
 # Biplot 
 fviz_pca_biplot(pca_result, geom.ind = "point", repel = TRUE)
 ```
@@ -537,7 +537,7 @@ fviz_cluster(list(data = df, cluster = km.res1$cluster), ellipse.type = "norm", 
 ```
 
 ### Visaulize Pairwise Distance
-```{r}
+```{r, warning=FALSE}
 fviz_dist(dist(df), show_labels = FALSE) +
   labs(title = "Distance Matrix – Texas County Data")
 ```
@@ -563,7 +563,7 @@ optimalScores(stab_valid)
 ```
 
 ### Hierarchical Clustering 
-```{r}
+```{r, warning=FALSE}
 Xsc <- scale(df)
 
 set.seed(100)
