@@ -198,7 +198,7 @@ ggcorr(data %>%
          select(-NAME),
        hjust = .9, 
        size = 2)
-setwd("C:/Users/rosie/Documents/Grad School Files/Data Science/Final Project")
+
 # Maps Set-Up
 # Extract Shape File
 tx_shapes <- st_read("tl_rd22_us_county.shp")

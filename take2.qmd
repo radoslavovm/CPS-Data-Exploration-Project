@@ -1,7 +1,7 @@
 ---
 title: "Data Science I Final Project"
 author: "Ayaka, Martina, and Rosie"
-format: pdf
+format: pdf 
 ---
 
 ## Set-Up
@@ -27,8 +27,11 @@ library(NbClust)
 library(clValid)
 library(mclust)
 library(sf)
+library(here)
+
 ```
 
+## Data Construction
 
 ### ACS Tables:
 - B02001: Race
@@ -68,7 +71,7 @@ library(sf)
 
 
 ### Pulling Data and Variables
-```{r Select Variables}
+```{r SelectVariables}
 # Variable list for ACS pull with explanation of variable
 variables <- 
   c(
@@ -121,7 +124,7 @@ variables <-
     )
 ```
 
-```{r Data Pull}
+```{r DataPull}
 # Retrieves ACS estimates for counties in TX (2019-2023 5-year ACS)
 tx_counties <- get_acs(
   geography = "county", 
@@ -131,7 +134,7 @@ tx_counties <- get_acs(
   survey = "acs5"
 )
 ```
-```{r ACS Wide Format}
+```{r ACSWideFormat}
 tx_counties <- tx_counties %>%
   select(GEOID, NAME, variable, estimate) %>%
   pivot_wider(names_from = variable, values_from = estimate)
@@ -220,7 +223,7 @@ data <- acs_clean %>%
 summary_table <- data %>%
   select(-NAME) %>%
   tbl_summary(
-    statistic = all_continuous() ~ "{mean} ({sd})",
+    statistic = all_continuous() ~ "{mean} ({sd}) [{min}, {max}]", # Summary Stats
     digits = all_continuous() ~ 2, # 2 decimal places
     label = list(
       White ~ "White (%)",
@@ -242,10 +245,56 @@ summary_table <- data %>%
       Internet_Subscription ~ "Home Internet Subscription (%)")
     ) %>% 
   modify_caption(
-    "Table 1: Socioeconomic Indicators at County Level (Mean and SD; Variables as Percentages)")
+    "Table 1: Socioeconomic Indicators at County Level")
 
 # Output
 summary_table
+```
+### Correlation Heatmap
+```{r}
+ggcorr(data %>% 
+         select(-NAME),
+       hjust = .9, 
+       size = 2)
+```
+```{r}
+# Histogram Plot 
+data %>%
+  select(-NAME) %>%
+  pivot_longer(everything(), names_to = "variable", values_to = "value") %>%
+  ggplot(aes(value)) +
+  geom_histogram(bins = 20, fill = "blue", color = "white") +
+  facet_wrap(~ variable, scales = "free") +
+  labs(title = "Distribution of All Variables", x = "Value", y = "Count")
+
+```
+
+### Scatterplot: Poverty vs. Unemployment
+```{r}
+ggplot(data, aes(Unemployed, Poverty)) +
+geom_point() +
+geom_smooth(method = "lm") +
+labs(title = "Relationship Between Poverty and Unemployment",
+x = "Unemployment (%)",
+y = "Poverty (%)")
+```
+### Scatterplot: Education vs. Internet Subscription
+```{r}
+ggplot(data, aes(Bachelors, Internet_Subscription)) +
+geom_point() +
+geom_smooth(method = "lm") +
+labs(title = "Education vs. Internet Subscription",
+x = "% bachelors Degree",
+y = "% Internet Subscription")
+```
+
+### Scatterplot: Owner-Occupied vs. Rented Housing
+```{r}
+ggplot(data, aes(Owner_Occupied, Renter)) +
+geom_point() +
+labs(title = "Owner vs. Renter-Occupied Housing",
+x = "% Owner-Occupied",
+y = "% Renter-Occupied")
 ```
 
 ### Scatterplot of Education vs. Poverty
@@ -262,14 +311,14 @@ ggplot(data, aes(x = Bachelors, y = Poverty)) +
 ### Unemployment Histogram
 ```{r}
 ggplot(data, aes(Unemployed)) +
-  geom_histogram(bins = 15, fill = "steelblue", col = "black") +
+  geom_histogram(bins = 15, fill = "blue", col = "black") +
   labs(
     title = "Distribution of Unemployment Rates Across Texas Counties",
     x = "Unemployment (%)",
     y = "Number of Counties"
   )
 ```
-## Maps
+## Maps for all Variables 
 ```{r, eval=FALSE}
 # Set-Up
 # Extract Shape File
@@ -283,8 +332,8 @@ tx_shapes <- tx_shapes %>%
 map_data <- tx_shapes %>%
   left_join(acs_clean, by = "GEOID")
 ```
-### Map
-```{r Map Set-Up}
+### Variable Maps
+```{r MapSetUp}
 county_map <- map_data("county") %>%
   filter(region == "texas")
 
@@ -300,7 +349,7 @@ merged_map <- county_map %>%
   left_join(education_plot, by = c("subregion" = "county"))
 ```
 
-```{r Map for Poverty}
+```{r MapPoverty}
 # Map for Poverty
 ggplot(merged_map, aes(long, lat, group = group, fill = Poverty)) +
   geom_polygon(color = "white") +
@@ -313,8 +362,8 @@ ggplot(merged_map, aes(long, lat, group = group, fill = Poverty)) +
   theme_void()
 ```
 
-```{r Map for Bachelors Degree}
-# Map for bachelors Degree
+```{r MapBachelorsDegree}
+# Map for Bachelors Degree
 ggplot(merged_map, aes(long, lat, group = group, fill = Bachelors)) +
   geom_polygon(color = "white") +
   coord_map() +
@@ -326,7 +375,7 @@ ggplot(merged_map, aes(long, lat, group = group, fill = Bachelors)) +
   theme_void()
 ```
 
-```{r Map for Unemployment}
+```{r MapUnemployment}
 # Map for Unemployment 
 ggplot(merged_map, aes(long, lat, group = group, fill = Unemployed)) +
   geom_polygon(color = "white") +
@@ -339,7 +388,7 @@ ggplot(merged_map, aes(long, lat, group = group, fill = Unemployed)) +
   theme_void()
 ```
 
-```{r Foreign-Born Population Map}
+```{r ForeignBornPopulationMap}
 # Map for Foreign-Born Population
 ggplot(merged_map, aes(long, lat, group = group, fill = Foreign_Born)) +
   geom_polygon(color = "white") +
@@ -352,7 +401,7 @@ ggplot(merged_map, aes(long, lat, group = group, fill = Foreign_Born)) +
   theme_void()
 ```
 
-```{r Native-Born Population Map}
+```{r NativeBornPopulationMap}
 # Map for Native-Born Population
 ggplot(merged_map, aes(long, lat, group = group, fill = Native)) +
   geom_polygon(color = "white") +
@@ -365,7 +414,7 @@ ggplot(merged_map, aes(long, lat, group = group, fill = Native)) +
   theme_void()
 ```
 
-```{r Internet Subscription Map}
+```{r InternetSubscriptionMap}
 # Map for Internet Subscription
 ggplot(merged_map, aes(long, lat, group = group, fill = Internet_Subscription)) +
   geom_polygon(color = "white") +
@@ -378,7 +427,7 @@ ggplot(merged_map, aes(long, lat, group = group, fill = Internet_Subscription)) 
   theme_void()
 ```
 
-```{r Long Commute to Work Map}
+```{r LongCommutetoWorkMap}
 # Map for Long Commute
 ggplot(merged_map, aes(long, lat, group = group, fill = Long_Commute)) +
   geom_polygon(color = "white") +
@@ -391,7 +440,7 @@ ggplot(merged_map, aes(long, lat, group = group, fill = Long_Commute)) +
   theme_void()
 ```
 
-```{r Owner Occupied House Map}
+```{r OwnerOccupiedHouseMap}
 # Owning House Map
 ggplot(merged_map, aes(long, lat, group = group, fill = Owner_Occupied)) +
   geom_polygon(color = "white") +
@@ -404,7 +453,7 @@ ggplot(merged_map, aes(long, lat, group = group, fill = Owner_Occupied)) +
   theme_void()
 ```
 
-```{r Married-Couple Families Map}
+```{r MarriedCoupleFamiliesMap}
 # Married-Couple Family Map
 ggplot(merged_map, aes(long, lat, group = group, fill = Married_Family)) +
   geom_polygon(color = "white") +
@@ -418,7 +467,6 @@ ggplot(merged_map, aes(long, lat, group = group, fill = Married_Family)) +
 ```
 
 ## PCA 
-
 ### Correlation Heatmap
 ```{r}
 # Correlation Heatmap
@@ -435,14 +483,19 @@ clean_data <- data %>%
   select(-NAME) %>%
   na.omit() # Removes states with missing values
 ```
+
 ### Run PCA
 ```{r}
 # Run PCA
 pca_result <- prcomp(clean_data, center = TRUE, scale. = TRUE)
 
+# Results as df
+pc_scores <- as.data.frame(pca_result$x)
+
 # PCA Summary
 summary(pca_result)
 ```
+
 ### Proportion of Variance and Cummulative Variance 
 ```{r}
 ## Compute manually 
@@ -480,6 +533,7 @@ fviz_pca_biplot(pca_result, geom.ind = "point", repel = TRUE)
 # Extract loadings from the PCA result
 loadings <- pca_result$rotation[, 1]
 
+loadings
 # Plot
 ggplot() +
   geom_bar(
@@ -494,6 +548,9 @@ ggplot() +
 ## Clustering
 ### Read and Visaulize Data
 ```{r}
+# Identify which rows have no missing values
+rows_used <- complete.cases(data %>% select(-NAME))
+
 # Standardize the dataset (Removing name and scaling)
 df <- data %>%
   select(-NAME) %>%
@@ -516,8 +573,8 @@ fviz_pca_ind(
 # Compute Hopkins statistic (Way from lab would not work)
 set.seed(2025)
 
-m <- ceiling(nrow(df) * 0.1)  # 10% of rows
-hopkins::hopkins(df, m = m)
+# m <- round(nrow(df) * 0.1)  # 10% of rows
+# hopkins(df, m = m)
 
 ```
 ### NbClust() for best number of clusters
@@ -586,3 +643,93 @@ plot +
 
 sub_grp <- cutree(hc_complete, 2)
 ```
+## Maps for PCA and Clustering 
+### PCA Map
+```{r}
+rows_used_pca <- complete.cases(data %>% select(-NAME))
+
+
+PC1_full <- rep(NA, nrow(data))
+PC2_full <- rep(NA, nrow(data))
+
+PC1_full[rows_used_pca] <- pc_scores$PC1
+PC2_full[rows_used_pca] <- pc_scores$PC2
+
+pca_df <- data %>%
+  mutate(
+    PC1 = PC1_full,
+    PC2 = PC2_full,
+    county = tolower(NAME),
+    county = gsub(",.*", "", county),
+    county = gsub(" county$", "", county),
+    county = trimws(county)
+  )
+
+# Merge with map 
+merged_map_pca <- county_map %>%
+  left_join(pca_df, by = c("subregion" = "county"))
+
+# PC
+ggplot(merged_map_pca, aes(long, lat, group = group, fill = PC1)) +
+  geom_polygon(color = "white") +
+  coord_map() +
+  scale_fill_viridis_c(option = "plasma") +
+  labs(
+    title = "PCA Component 1 Across Texas Counties",
+    fill = "PC1"
+  ) +
+  theme_void()
+
+ggplot(merged_map_pca, aes(long, lat, group = group, fill = PC2)) +
+  geom_polygon(color = "white") +
+  coord_map() +
+  scale_fill_viridis_c(option = "inferno") +
+  labs(
+    title = "PCA Component 2 Across Texas Counties",
+    fill = "PC2"
+  ) +
+  theme_void()
+```
+
+### Cluster Map
+```{r}
+# Full-length cluster vector to match data 
+cluster_vec <- rep(NA, nrow(data))   
+
+# Insert clusters for rows used in k-means
+cluster_vec[rows_used] <- km.res1$cluster
+
+# Attach the clusters and also clean county names
+cluster_df <- data %>%
+  mutate(
+    cluster = cluster_vec,
+    county = tolower(NAME),
+    county = gsub(",.*", "", county),
+    county = gsub(" county$", "", county),
+    county = trimws(county)
+  )
+
+# Texas counties
+county_map <- map_data("county") %>%
+  filter(region == "texas")
+
+# Merge cluster info with map
+merged_map_cluster <- county_map %>%
+  left_join(cluster_df, by = c("subregion" = "county"))
+
+# Plot cluster map
+ggplot(merged_map_cluster, aes(long, lat, group = group, fill = factor(cluster))) +
+  geom_polygon(color = "white") +
+  coord_map() +
+  scale_fill_viridis_d(option = "plasma") +
+  labs(
+    title = "K-Means Clusters of Texas Counties Based on Socioeconomic Indicators",
+    fill = "Cluster"
+  ) +
+  theme_void()
+```
+
+
+
+
+
