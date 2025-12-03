@@ -93,6 +93,183 @@ variables <-
     )
 ```
 
+```{r Data Pull}
+# Retrieves ACS estimates for all states (2024 1-year ACS)
+state_level <- get_acs(geography = "state", 
+                        variables = variables, 
+                        year = 2024,
+                        survey = "acs1")
+```
+```{r ACS Wide Format}
+state_wide <- state_level %>%
+  select(GEOID, NAME, variable, estimate) %>%
+  pivot_wider(names_from = variable, values_from = estimate)
+```
+
+
+### Converting variables to percentgaes
+```{r}
+acs_clean <- state_wide %>%
+  mutate(
+    # Race
+    percent_white = B02001_002 / B02001_001 * 100,
+    percent_black = B02001_003 / B02001_001 * 100,
+    percent_asian = B02001_005 / B02001_001 * 100,
+    percent_two_or_more  = B02001_009 / B02001_001 * 100,
+    
+    # Education
+    percent_hs_diploma = B15003_017 / B15003_001 * 100,
+    percent_bachelors = B15003_022 / B15003_001 * 100,
+    percent_doctorate = B15003_025 / B15003_001 * 100,
+    
+    # Housing
+    percent_owner_occupied = B25003_002 / B25003_001 * 100,
+    percent_renter = B25003_003 / B25003_001 * 100,
+    
+    # Mobility
+    percent_native = B07007_002 / B07007_001 * 100,
+    percent_foreign_born = B07007_003 / B07007_001 * 100,
+    
+    # Language
+    percent_english_only = B16001_002 / B16001_001 * 100,
+    
+    # Poverty
+    percent_poverty = B17001_002 / B17001_001 * 100,
+    
+    # Public Transit
+    percent_public_transit = B08006_008 / B08006_001 * 100,
+    
+    # Long Commute to Work
+    percent_long_commute = B08303_013 / B08303_001 * 100,
+    
+    # Family Structure
+    percent_married_family = B09002_002 / B09002_001 * 100,
+    
+    # Unemployment
+    percent_unemployed = B23025_005 / B23025_001 * 100
+  )
+
+```
+
+## EDA
+### Dataset with Percentage Variables
+```{r dataset}
+# Dataset With the Percentage Variables/Data for EDA
+# Rename to cleaner names
+data_EDA <- acs_clean %>%
+  select(NAME, percent_white, percent_black, percent_asian, percent_two_or_more,
+         percent_hs_diploma, percent_bachelors, percent_doctorate, percent_owner_occupied, 
+         percent_renter, percent_native, percent_foreign_born, percent_english_only, 
+         percent_poverty, percent_public_transit, percent_long_commute, 
+         percent_married_family, percent_unemployed) %>%
+  rename(
+    White = percent_white,
+    Black = percent_black,
+    Asian = percent_asian,
+    Two_Races = percent_two_or_more,
+    HS_Diploma = percent_hs_diploma,
+    Bachelors = percent_bachelors,
+    Doctorate = percent_doctorate,
+    Owner_Occupied = percent_owner_occupied,
+    Renter = percent_renter,
+    Native = percent_native,
+    Foreign_Born = percent_foreign_born,
+    English_Only = percent_english_only,
+    Poverty = percent_poverty,
+    Public_Transit = percent_public_transit,
+    Long_Commute = percent_long_commute,
+    Married_Family = percent_married_family,
+    Unemployed = percent_unemployed
+  )
+```
+
+```{r}
+# Filter data for Texas and California
+tx_ca <- data_EDA %>% 
+  filter(NAME %in% c("Texas", "California"))
+
+# Pivot to wide so each state has its own column
+tx_ca_wide <- tx_ca %>%
+  select(NAME, White, Black, Asian, Two_Races, HS_Diploma, Bachelors, Doctorate, 
+         Owner_Occupied, Renter, Native, Foreign_Born, English_Only, Poverty, 
+         Public_Transit, Long_Commute, Married_Family, Unemployed) %>%
+  pivot_longer(-NAME, names_to = "variable", values_to = "value") %>%
+  pivot_wider(names_from = NAME, values_from = value)
+
+# Relabel variables for table output
+comparison_table <- tx_ca_wide %>%
+  mutate(
+    variable = case_when(
+      variable == "White" ~ "White (%)",
+      variable == "Black" ~ "Black (%)",
+      variable == "Asian" ~ "Asian (%)",
+      variable == "Two_Races" ~ "Two or More Races (%)",
+      variable == "HS_Diploma" ~ "High School Diploma (%)",
+      variable == "Bachelors" ~ "Bachelor's Degree (%)",
+      variable == "Doctorate" ~ "Doctorate Degree (%)",
+      variable == "Owner_Occupied" ~ "Owner-Occupied Housing (%)",
+      variable == "Renter" ~ "Renter-Occupied Housing (%)",
+      variable == "Native" ~ "Native Population (%)",
+      variable == "Foreign_Born" ~ "Foreign-Born Population (%)",
+      variable == "English_Only" ~ "English Only at Home (%)",
+      variable == "Poverty" ~ "Below Poverty Line (%)",
+      variable == "Public_Transit" ~ "Public Transit Use (%)",
+      variable == "Long_Commute" ~ "Long Commute (90+ min) (%)",
+      variable == "Married_Family" ~ "Married-Couple Family (%)",
+      variable == "Unemployed" ~ "Unemployment Rate (%)",
+      TRUE ~ variable
+    )
+  ) %>%
+  gt() %>% # gt table 
+  fmt_number(columns = c(Texas, California), decimals = 2) %>%
+  tab_header(title = "Texas vs California: Socioeconomic Characteristics (Percentages)")
+
+# Output
+comparison_table
+
+```
+
+# PCA
+
+```{r pca}
+
+tx_ca_num <- tx_ca_wide %>%
+  dplyr::select(-variable)
+
+pca <- prcomp(tx_ca_num, scale. = TRUE)
+loadings <- as.data.frame(pca$x)
+
+```
+# Clustering
+
+```{r clustering}
+
+Xsc <- scale(tx_ca_num)
+
+set.seed(100)
+
+m <- c( "average", "single", "complete", "ward")
+names(m) <- c( "average", "single", "complete", "ward")
+ac <- function(x) {
+  agnes(Xsc, method = x)$ac
+  }
+purrr::map_dbl(m, ac)
+
+distance <- dist(Xsc, method = "euclidean")
+hc_complete <- hclust(distance, method = 'ward.D2')
+plot(hc_complete)
+
+plot <- fviz_dend(hc_complete, k = 2)
+plot +
+  theme_minimal() +
+  labs(title = "Dendrogram based on Hierarchical Clustering")
+
+sub_grp <- cutree(hc_complete, 2)
+
+
+```
+
+# Old 
 # Data
 
 ```{r data}
