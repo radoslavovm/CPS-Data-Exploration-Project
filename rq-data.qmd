@@ -21,6 +21,7 @@ library(cluster)
 library(GGally)
 library(factoextra)
 library(ggcorrplot)
+library(gt)
 
 ```
 
@@ -272,7 +273,7 @@ sub_grp <- cutree(hc_complete, 2)
 # Old 
 # Data
 
-```{r data}
+```{r, }
 both <- get_acs(geography = "county", 
                 state = c("CA", "TX"),
                 variables = variables, 
@@ -296,7 +297,7 @@ both <- both %>%
 
 # EDA
 
-```{r eda, warning=FALSE}
+```{r, eval=FALSE}
 sum(is.na(both))
 both <- na.omit(both)
 sum(is.na(both))
@@ -312,7 +313,7 @@ both_num <- both %>%
 
 # PCA
 
-```{r pca}
+```{r, eval=FALSE}
 # B01001_001 has 0 variance since variables are normalized by population
 zero_variance_cols <- names(both_num)[apply(both_num, 2, var, na.rm = TRUE) == 0]
 both_num <- both_num[, !(names(both_num) %in% zero_variance_cols)]
@@ -330,7 +331,7 @@ fa.parallel(both_num, fa = "fa")
 
 # Clustering
 
-```{r clustering}
+```{r, eval=FALSE}
 
 Xsc <- scale(both_num)
 
