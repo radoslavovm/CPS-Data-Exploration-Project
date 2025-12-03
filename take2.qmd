@@ -36,7 +36,7 @@ library(sf)
       (White alone, Black alone, Asian alone, Two or more races)
 
 - B15003: Educational Attainment (Population 25 Years and Older)
-    - Includes high school diploma, bachelor's degree, and doctorate 
+    - Includes high school diploma, bachelors degree, and doctorate 
       attainment counts
 
 - B25003: Housing Tenure
@@ -82,7 +82,7 @@ variables <-
     # Educational Attainment
     'B15003_001', # Total Education Population
     'B15003_017', # High School Diploma
-    'B15003_022', # Bachelor's Degree
+    'B15003_022', # bachelors Degree
     'B15003_025', # Doctorate Degree
     
     # Housing Status
@@ -228,7 +228,7 @@ summary_table <- data %>%
       Asian ~ "Asian (%)",
       Two_Races ~ "Two or More Races (%)",
       HS_Diploma ~ "High School Diploma (%)",
-      Bachelors ~ "Bachelor’s Degree (%)",
+      Bachelors ~ "Bachelors Degree (%)",
       Doctorate ~ "Doctorate Degree (%)",
       Owner_Occupied ~ "Owner-Occupied Housing (%)",
       Renter ~ "Renter-Occupied Housing (%)",
@@ -253,7 +253,7 @@ summary_table
 ggplot(data, aes(x = Bachelors, y = Poverty)) +
   geom_point() +
   geom_smooth(method = "lm") +
-  labs(title = "Poverty vs. Bachelor's Degree Attainment Across Texas Counties",
+  labs(title = "Poverty vs. bachelors Degree Attainment Across Texas Counties",
     x = "Bachelor’s Degree (%)",
     y = "Poverty (%)")
 ```
@@ -270,7 +270,7 @@ ggplot(data, aes(Unemployed)) +
   )
 ```
 ## Maps
-```{r}
+```{r, eval=FALSE}
 # Set-Up
 # Extract Shape File
 tx_shapes <- st_read("tl_rd22_us_county.shp")
@@ -313,14 +313,14 @@ ggplot(merged_map, aes(long, lat, group = group, fill = Poverty)) +
   theme_void()
 ```
 
-```{r Map for Bachelor's Degree}
-# Map for Bachelor's Degree
+```{r Map for Bachelors Degree}
+# Map for bachelors Degree
 ggplot(merged_map, aes(long, lat, group = group, fill = Bachelors)) +
   geom_polygon(color = "white") +
   coord_map() +
   scale_fill_viridis_c(option = "plasma") +
   labs(
-    title = "Bachelor's Degree Attainment Across Texas Counties",
+    title = "bachelors Degree Attainment Across Texas Counties",
     fill = "% BA"
   ) +
   theme_void()
@@ -420,7 +420,7 @@ ggplot(merged_map, aes(long, lat, group = group, fill = Married_Family)) +
 ## PCA 
 
 ### Correlation Heatmap
-```{r, warning=FALSE}
+```{r}
 # Correlation Heatmap
 ggcorr(data, hjust = .9, size = 2, layout.exp = 2)
 ```
@@ -465,13 +465,13 @@ plot(cumsum(explained_variance), xlab = "Principal Component",
 
 
 ### Scree Plot
-```{r, warning=FALSE}
+```{r}
 # Scree Plot through Function
 fviz_eig(pca_result, addlabels = TRUE)
 ```
 
 ### Biplot
-```{r, warning=FALSE}
+```{r}
 # Biplot 
 fviz_pca_biplot(pca_result, geom.ind = "point", repel = TRUE)
 ```
@@ -537,7 +537,7 @@ fviz_cluster(list(data = df, cluster = km.res1$cluster), ellipse.type = "norm", 
 ```
 
 ### Visaulize Pairwise Distance
-```{r, warning=FALSE}
+```{r}
 fviz_dist(dist(df), show_labels = FALSE) +
   labs(title = "Distance Matrix – Texas County Data")
 ```
@@ -563,7 +563,7 @@ optimalScores(stab_valid)
 ```
 
 ### Hierarchical Clustering 
-```{r, warning=FALSE}
+```{r}
 Xsc <- scale(df)
 
 set.seed(100)
@@ -586,4 +586,3 @@ plot +
 
 sub_grp <- cutree(hc_complete, 2)
 ```
-
