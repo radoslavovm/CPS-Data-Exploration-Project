@@ -22,6 +22,7 @@ library(GGally)
 library(factoextra)
 library(ggcorrplot)
 library(gt)
+library(hopkins)
 
 ```
 
@@ -98,15 +99,23 @@ variables <-
 ```{r Data Pull}
 # Retrieves ACS estimates for all states (2024 1-year ACS)
 state_level <- get_acs(geography = "county",
-                       state = c("CA", "TX"),
+                       state = "TX",
                        variables = variables, 
                        year = 2024,
                        survey = "acs1")
-```
-```{r ACS Wide Format}
+
+pop <- state_level %>%
+  filter(variable == "B01001_001") %>%
+  select(GEOID, population = estimate)
+
 state_wide <- state_level %>%
-  select(GEOID, NAME, variable, estimate) %>%
-  pivot_wider(names_from = variable, values_from = estimate)
+  left_join(pop, by = "GEOID") %>%
+  mutate(normalized_estimate = estimate / population) %>% 
+  select(GEOID, NAME, variable, population, normalized_estimate) %>%
+  pivot_wider(
+    names_from = variable,
+    values_from = normalized_estimate
+  )
 ```
 
 
@@ -235,20 +244,23 @@ comparison_table
 # PCA
 
 ```{r pca}
-df <- tx_ca_wide %>%
-  select(-variable) %>%
+tx_df <- state_wide %>%
+  select(-c(GEOID, NAME)) %>%
   na.omit()
+
+# B01001_001 has 0 variance since variables are normalized by population
+zero_variance_cols <- names(tx_df)[apply(tx_df, 2, var, na.rm = TRUE) == 0]
+tx_df <- tx_df[, !(names(tx_df) %in% zero_variance_cols)]
 
 set.seed(2025)
 
 # Hopkins test needs a number of samples m, not n=
-m <- round(nrow(tx_ca_wide) * 0.1)
+m <- round(nrow(tx_df) * 0.1)
 
-hopkins(df, m = m)
+hopkins(tx_df, m = m)
 
-pca <- prcomp(tx_ca_num, scale. = TRUE)
+pca <- prcomp(tx_df, scale. = TRUE)
 loadings <- as.data.frame(pca$x)
-
 
 
 ```

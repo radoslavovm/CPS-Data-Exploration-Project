@@ -232,9 +232,14 @@ comparison_table
 # PCA
 
 ```{r pca}
-tx_df <- tx_wide %>%
-  select(-variable) %>%
+tx_df <- state_wide %>%
+  select(-c(GEOID, NAME)) %>%
   na.omit()
+
+# B01001_001 has 0 variance since variables are normalized by population
+zero_variance_cols <- names(tx_df)[apply(tx_df, 2, var, na.rm = TRUE) == 0]
+tx_df <- tx_df[, !(names(tx_df) %in% zero_variance_cols)]
+
 
 set.seed(2025)
 
