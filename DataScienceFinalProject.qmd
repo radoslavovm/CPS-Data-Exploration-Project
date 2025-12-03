@@ -31,7 +31,7 @@ library(mclust)
 ## Data Construction
 ```{r api key}
 # Access to ACS datasets using tidycensus
-census_api_key("4b11e9f5d9ac286e1a22800c7e56fc771229ec6a", install = TRUE)
+#census_api_key("4b11e9f5d9ac286e1a22800c7e56fc771229ec6a", install = TRUE)
 ```
 
 ### ACS Tables:
@@ -320,8 +320,6 @@ plot(cumsum(explained_variance), xlab = "Principal Component",
      ylim = c(0, 1), type = "b")
 ```
 
-
-
 ### Scree Plot
 ```{r}
 # Scree Plot through Function
@@ -375,7 +373,7 @@ fviz_pca_ind(
 set.seed(2025)
 
 m <- round(nrow(df) * 0.1)  # 10% of rows
-hopkins(df, m = m)
+hopkins(df)
 
 ```
 ### NbClust() for best number of clusters
@@ -385,6 +383,31 @@ df_pc <- pc$x[, 1:5]  # use enough to explain ~80% variance
 
 nb <- NbClust(df_pc, distance="euclidean", min.nc=2, max.nc=10, method="kmeans")
 ```
+```{r Map of education percentage}
+county_map <- map_data("county") %>%
+  filter(region == "texas")
+
+education_plot <- data %>%
+  mutate(
+    county = tolower(NAME),
+    county = gsub(",.*", "", county),      # remove everything after a comma
+    county = gsub(" county$", "", county), # remove " county"
+    county = trimws(county)
+  )
+
+merged_map <- county_map %>%
+  left_join(education_plot, by = c("subregion" = "county"))
+
+ggplot(merged_map, aes(long, lat, group = group, fill = Foreign_Born)) +
+  geom_polygon(color = "white") +
+  coord_map() +
+  scale_fill_viridis_c(option = "plasma") +
+  labs(title = "Foreign Born Percentages by Counties in Texas",
+       fill = "% BA+") +
+  theme_void()
+
+```
+
 ### Performing K-Means Clustering
 ```{r}
 set.seed(2025)
