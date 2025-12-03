@@ -92,14 +92,16 @@ variables <-
     "B23025_001", # Total Population 16+
     "B23025_005"  # Unemployed
     )
+
 ```
 
 ```{r Data Pull}
 # Retrieves ACS estimates for all states (2024 1-year ACS)
-state_level <- get_acs(geography = "state", 
-                        variables = variables, 
-                        year = 2024,
-                        survey = "acs1")
+state_level <- get_acs(geography = "county",
+                       state = c("CA", "TX"),
+                       variables = variables, 
+                       year = 2024,
+                       survey = "acs1")
 ```
 ```{r ACS Wide Format}
 state_wide <- state_level %>%
@@ -190,7 +192,7 @@ tx_ca <- data_EDA %>%
   filter(NAME %in% c("Texas", "California"))
 
 # Pivot to wide so each state has its own column
-tx_ca_wide <- tx_ca %>%
+tx_ca_wide <- data_EDA %>%
   select(NAME, White, Black, Asian, Two_Races, HS_Diploma, Bachelors, Doctorate, 
          Owner_Occupied, Renter, Native, Foreign_Born, English_Only, Poverty, 
          Public_Transit, Long_Commute, Married_Family, Unemployed) %>%
@@ -222,7 +224,7 @@ comparison_table <- tx_ca_wide %>%
     )
   ) %>%
   gt() %>% # gt table 
-  fmt_number(columns = c(Texas, California), decimals = 2) %>%
+  #fmt_number(columns = c(Texas, California), decimals = 2) %>%
   tab_header(title = "Texas vs California: Socioeconomic Characteristics (Percentages)")
 
 # Output
@@ -233,12 +235,21 @@ comparison_table
 # PCA
 
 ```{r pca}
+df <- tx_ca_wide %>%
+  select(-variable) %>%
+  na.omit()
 
-tx_ca_num <- tx_ca_wide %>%
-  dplyr::select(-variable)
+set.seed(2025)
+
+# Hopkins test needs a number of samples m, not n=
+m <- round(nrow(tx_ca_wide) * 0.1)
+
+hopkins(df, m = m)
 
 pca <- prcomp(tx_ca_num, scale. = TRUE)
 loadings <- as.data.frame(pca$x)
+
+
 
 ```
 # Clustering
