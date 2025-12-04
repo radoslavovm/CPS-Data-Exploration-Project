@@ -25,6 +25,7 @@ library(clValid)
 library(mclust)
 library(sf)
 library(cluster)
+library(patchwork)
 
 # Variable list for ACS pull with explanation of variable from ACS Tables
 variables <- 
@@ -174,7 +175,7 @@ summary_table <- data %>%
       Asian ~ "Asian (%)",
       Two_Races ~ "Two or More Races (%)",
       HS_Diploma ~ "High School Diploma (%)",
-      Bachelors ~ "Bachelor’s Degree (%)",
+      Bachelors ~ "Bachelors Degree (%)",
       Doctorate ~ "Doctorate Degree (%)",
       Owner_Occupied ~ "Owner-Occupied Housing (%)",
       Renter ~ "Renter-Occupied Housing (%)",
