@@ -193,8 +193,6 @@ summary_table <- data %>%
 # Output
 summary_table
 
-# Output
-summary_table
 
 # Correlation Heatmap
 ggcorr(data %>% 
@@ -354,6 +352,23 @@ stab_valid <- clValid(
 )
 optimalScores(stab_valid)
 
+# Use the PCA data for clustering
+Xsc <- scale(pc_for_clustering)
+
+set.seed(2025)
+
+# Methods to compare
+m <- c("average", "single", "complete", "ward")
+names(m) <- m
+
+# Function to compute agglomerative coefficient
+ac <- function(method) {
+  agnes(Xsc, method = method)$ac
+}
+
+# Compute agglomerative coefficients for each method
+agnes_results <- purrr::map_dbl(m, ac)
+agnes_results
 
 # Hierarchical Clustering 
 set.seed(2025)
@@ -433,4 +448,3 @@ ggplot(map_data_cluster) +
   scale_fill_viridis_d(option = "plasma") +
   labs(title = "Hierarchical Clusters (PCA-Based)", fill = "Cluster") +
   theme_void()
-
